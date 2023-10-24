@@ -371,20 +371,19 @@ public class EslPlanner extends AbstractPlanner {
      */
     @Override
     public boolean isSupported(Problem problem) {
-        return (problem.getRequirements().contains(RequireKey.ACTION_COSTS)
-            || problem.getRequirements().contains(RequireKey.CONSTRAINTS)
-            || problem.getRequirements().contains(RequireKey.CONTINOUS_EFFECTS)
-            || problem.getRequirements().contains(RequireKey.DERIVED_PREDICATES)
-            || problem.getRequirements().contains(RequireKey.DURATIVE_ACTIONS)
-            || problem.getRequirements().contains(RequireKey.DURATION_INEQUALITIES)
-            || problem.getRequirements().contains(RequireKey.FLUENTS)
-            || problem.getRequirements().contains(RequireKey.GOAL_UTILITIES)
-            || problem.getRequirements().contains(RequireKey.METHOD_CONSTRAINTS)
-            || problem.getRequirements().contains(RequireKey.NUMERIC_FLUENTS)
-            || problem.getRequirements().contains(RequireKey.OBJECT_FLUENTS)
-            || problem.getRequirements().contains(RequireKey.PREFERENCES)
-            || problem.getRequirements().contains(RequireKey.TIMED_INITIAL_LITERALS)
-            || problem.getRequirements().contains(RequireKey.HIERARCHY))
-            ? false : true;
+        return !problem.getRequirements().contains(RequireKey.ACTION_COSTS)
+                && !problem.getRequirements().contains(RequireKey.CONSTRAINTS)
+                && !problem.getRequirements().contains(RequireKey.CONTINOUS_EFFECTS)
+                && !problem.getRequirements().contains(RequireKey.DERIVED_PREDICATES)
+                && !problem.getRequirements().contains(RequireKey.DURATIVE_ACTIONS)
+                && !problem.getRequirements().contains(RequireKey.DURATION_INEQUALITIES)
+                && !problem.getRequirements().contains(RequireKey.FLUENTS)
+                && !problem.getRequirements().contains(RequireKey.GOAL_UTILITIES)
+                && !problem.getRequirements().contains(RequireKey.METHOD_CONSTRAINTS)
+                && !problem.getRequirements().contains(RequireKey.NUMERIC_FLUENTS)
+                && !problem.getRequirements().contains(RequireKey.OBJECT_FLUENTS)
+                && !problem.getRequirements().contains(RequireKey.PREFERENCES)
+                && !problem.getRequirements().contains(RequireKey.TIMED_INITIAL_LITERALS)
+                && !problem.getRequirements().contains(RequireKey.HIERARCHY);
     }
 }
