@@ -44,6 +44,8 @@
 		(is-holding ?r -robot ?c - carrier) ; robot ?r is holding carrier ?c
 	)
 
+
+
 	(:action fill-box
 		:parameters ( ?r - robot ?b - box ?elem - content ?l - location )
 		:precondition (and (not (full ?b)) (depot-at ?l)
@@ -55,7 +57,7 @@
 	(:action give-content
 		:parameters (?r - robot ?p - person ?elem - content ?b - box   ?l - location
         	)
-		:precondition (and (at ?p ?l) (at ?b ?l)
+		:precondition (and (at ?p ?l) (at ?b ?l) (at ?r ?l)
 			(has-inside ?b ?elem)
         	)
 		:effect (and (not (has-inside ?b ?elem))

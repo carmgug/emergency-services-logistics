@@ -1,0 +1,85 @@
+package utility;
+
+import java.util.*;
+
+public class Predicate {
+    // Predicate ID
+    private int symbol;
+    // Predicate name
+    private String name;//Nome_predicato
+
+
+    // List of Arguments involved in the predicate: an argument has an ID and his name
+    private List<Argument> arguments;
+
+    public Predicate(int symbol, String name, int[] arguments_id, String[] arguments_name) {
+        this.symbol = symbol;
+        this.name = name;
+        this.arguments = new LinkedList<>();
+        for (int i = 0; i < arguments_id.length; i++) {
+            Integer argument_id = arguments_id[i];
+            String argument_name = arguments_name[i + 1];
+            arguments.add(new Argument(argument_id, argument_name));
+        }
+    }
+
+    public int getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(int symbol) {
+        this.symbol = symbol;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List<Argument> getArguments() {
+        List<Argument> clonedArguments = new LinkedList<>();
+
+        for (Argument argument : this.arguments) {
+            Argument clonedArgument = (Argument) argument.clone();
+            clonedArguments.add(clonedArgument);
+        }
+
+        return clonedArguments;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Predicate predicate = (Predicate) o;
+        return symbol == predicate.symbol && Objects.equals(name, predicate.name) && Objects.equals(arguments, predicate.arguments);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(symbol, name, arguments);
+    }
+
+    @Override
+    public String toString() {
+
+        StringBuilder result = new StringBuilder("(")
+                .append("<").append(symbol).append(":").append(name).append(">");
+
+        for (Argument arg : arguments) {
+            result.append(" ").append("<").append(arg.getArgument_id()).append(":").append(arg.getArgument_name()).append(">");
+        }
+
+        result.append(")");
+
+
+        return result.toString();
+    }
+}
+
+
+
+
