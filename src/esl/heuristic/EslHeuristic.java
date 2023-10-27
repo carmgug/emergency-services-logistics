@@ -1,4 +1,4 @@
-package esl;
+package esl.heuristic;
 
 import fr.uga.pddl4j.parser.TypedSymbol;
 import fr.uga.pddl4j.problem.Fluent;
@@ -9,6 +9,8 @@ import fr.uga.pddl4j.problem.operator.Condition;
 import sun.awt.image.ImageWatched;
 import utility.Argument;
 import utility.Predicate;
+import fr.uga.pddl4j.planners.statespace.search.Node;
+
 
 import fr.uga.pddl4j.problem.*;
 
@@ -129,6 +131,47 @@ public final class EslHeuristic {
         return res;
     }
 
+    public boolean isWorth(Node current, Action op){
+
+        String action_name=op.getName();
+
+        switch (action_name){
+            case "move":
+                return evaluateMove(current,op);
+            case "move-carrier":
+                return evaluateMoveCarrier(current,op);
+            default:
+                return true;
+        }
+
+
+
+    }
+
+    private boolean evaluateMoveCarrier(Node current,Action op){
+        return true;
+    }
+    private boolean evaluateMove(Node current, Action op){
+        //Caso 1: Move del robot ma la scorsa azione è stata anche una move
+        // Non ha senso girare a vuoto per la mappa, la move ha senso quando il robot in un posto in cui ci sia anche il carrello per prenderlo in mano
+        //L'azione move :parameters
+        int[] parameters=op.getParameters(); // [?r - robot, ?from - location , ?to - location)
+        int des_id=parameters[2]; //destination
+        //Check if exist Carrier at destination des_id in the current state
+        List<Predicate> state= getPredicates(current.stream().toArray());
+        for(Predicate p: state){
+            if(p.getName().equals("at") && p.containsArgByID(des_id)){
+                for(Argument carrier:typeToArguments.get("carrier")){
+                    String carrier_name=carrier.getArgument_name();
+                    if(p.containsArgByName(carrier_name))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
 
     public double estimate(Node current, Node next, Action a, Condition goal) {
 
@@ -168,17 +211,13 @@ public final class EslHeuristic {
         estimated_value+=checkCarrier(new_state,goals_already_satisfied,goals_not_satisfied_yet);
 
 
-        //System.out.println("Goals: "+goals);
-        //System.out.println(getGoalAlreadySatisfied(new_state,goals));
-        //System.out.println(getGoalNotAlreadySatisfied(goals,getGoalAlreadySatisfied(new_state,goals)));
-
         //Se in questo nodo ho effettuato un azione che mi ha portato a una vicinaza nella soddifazione dei goal allora ritorno subito
         if(getGoalAlreadySatisfied(old_state,goals).size()<goals_already_satisfied.size()) {
             return Double.MIN_VALUE;
         }
 
 
-        return estimated_value;
+        return estimated_value*goals_not_satisfied_yet.size();
     }
 
     private int countOccurrences(List<Predicate> list,String predicate){
@@ -208,14 +247,12 @@ public final class EslHeuristic {
 
 
         double numEmptySpacesInCurrentState= countOccurrences(predicates,"empty");
-        double c1=2;
-        if(numEmptySpacesInCurrentState<goalsNotSatisfiedYet.size()){
-            c1=0;
-        }
+        double c1=5;
+
         int numOfUnoccupiedCarts=this.n_carrier-countOccurrences(predicates,"is-holding");
 
 
-        return 0;
+        return numEmptySpacesInCurrentState*c1+numOfUnoccupiedCarts;
     }
 
     private double checkBoxes(List<Predicate> predicates, List<Predicate> goalsAlreadySatisfied, List<Predicate> goalsNotSatisfiedYet) {
@@ -263,7 +300,7 @@ public final class EslHeuristic {
         // Number of elements present in boxContents but not in requiredGoalElements: these are the loaded items that are not needed
         double x2 = boxContents.size();
 
-        return (x1 + (x2))* goalsNotSatisfiedYet.size();
+        return (x1*2 + (x2*3))*6;
     }
 
     /*

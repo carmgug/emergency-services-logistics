@@ -23,6 +23,27 @@ public class Predicate {
         }
     }
 
+
+    public boolean containsArgByID(int id){
+
+        for(Argument arg:arguments){
+            int curr_id=arg.getArgument_id();
+            if(id==curr_id) return true;
+        }
+
+        return false;
+    }
+
+    public boolean containsArgByName(String name){
+
+        for(Argument arg:arguments){
+            String curr_name=arg.getArgument_name();
+            if(name.equals(curr_name)) return true;
+        }
+
+        return false;
+    }
+
     public int getSymbol() {
         return symbol;
     }

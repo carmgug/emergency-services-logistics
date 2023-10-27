@@ -31,7 +31,6 @@
   	(at b1 depot) (at b2 depot) (at b3 depot) (at b4 depot);box one box 2 and box 3 are at the same place (Depot)
   	(at food depot) (at medicine depot) (at tool depot) ;food medicine and tools are at the same place (Depot)
   	(at p1 l1) (at p2 l1) (at p3 l2) (at p4 l3) (at p5 l4) (at p6 l5) (at p7 l6) (at p8 l7) ; person one and person two are at location one. Other people are at different place.
-
     (empty s1-ca ca) (empty s2-ca ca) (empty s1-cb cb) (empty s2-cb cb) ; In this case carrier one and also carrier two have two slot.
 
   )

@@ -13,17 +13,13 @@
 	)
 
 	(:types
-		slot - object ; A space in a dimensionable object
-		box - object  ; A box that can be filled with content
-		carrier - object ; A carrier that can be used to transport boxes
-		robot - object ; A robot that can move around and interact with boxes, carrier and contenents
-		location - object ; A place
-		content - object ; A type of object that can be placed in a box or given to a person
-		person - object ; A person who can receive content
-		food tool medicine - content ; types of content that can be placed in a box or given to a person
-
-
-
+		slot - object; A space in a dimensionable object
+		box   - object; A box that can be filled with content
+		carrier - object; A carrier that can be used to transport boxes
+		robot  - object; A robot that can move around and interact with boxes, carrier and contenents
+		location - object; A place
+		content  - object; A type of object that can be placed in a box or given to a person
+		person - object; A person who can receive content
 	)
 
 
@@ -97,7 +93,8 @@
 
 	(:action load-carrier
 		:parameters (?r - robot ?b -box ?c - carrier ?s - slot ?l - location)
-		:precondition (and (at ?b ?l) (at ?r ?l) (at ?c ?l)
+		:precondition (and
+		    (at ?b ?l) (at ?r ?l) (at ?c ?l)
 			(not (already-taken ?b))
 			(empty ?s ?c)
 		)
@@ -110,8 +107,11 @@
 
 	(:action unload-carrier
 		:parameters (?r - robot ?b - box ?c - carrier ?s - slot ?l - location)
-		:precondition (and (at ?r ?l) (at ?c ?l) (on-carrier ?b ?c)
-		    (not (empty ?s ?c))
+		:precondition (and
+		    (is-holding ?r ?c)
+		    (at ?r ?l) (at ?c ?l)
+		    (on-carrier ?b ?c) (not (full ?b))
+		    (not (empty ?s ?c) )
         )
 		:effect (and (not (on-carrier ?b ?c)) (at ?b ?l)
 			(empty ?s ?c)
@@ -121,7 +121,7 @@
 
 	(:action move
 		:parameters (?r - robot ?from ?to - location)
-		:precondition (and (at ?r ?from)
+		:precondition (and (at ?r ?from) (not (at ?r ?to))
 				(not
 					(exists (?x - carrier)
 						(is-holding ?r ?x)

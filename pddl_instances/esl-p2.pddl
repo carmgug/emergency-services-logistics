@@ -11,11 +11,8 @@
    depot l1 l2 l3 l4 l5 - location
    ca cb - carrier
    s1-ca s2-ca s1-cb s2-cb - slot
-
    food - content
-
    medicine - content
-
    tool - content
 
    )
