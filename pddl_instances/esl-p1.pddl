@@ -15,7 +15,7 @@
   (:init
   	(depot-at depot)
   	(at r1 depot) (at ca depot)
-  	(at b1 depot) (at b2 depot) (at b3 depot) (at b4 depot) (at b5 depot)
+  	(at b1 depot) (at b3 depot) (at b4 depot) (at b5 depot)
   	(at food depot) (at medicine depot)
   	(at p1 l1) (at p2 l1) (at p3 l2)
   	(empty s1-ca ca) (empty s2-ca ca) (empty s3-ca ca) (empty s4-ca ca)
@@ -23,7 +23,8 @@
 
 ;; The task is to provide people with the content they need
     (:goal
-        (and (has-content p1 food)
+        (and
+            (has-content p1 food)
             (has-content p1 medicine)
             (has-content p2 medicine)
             (has-content p3 food)

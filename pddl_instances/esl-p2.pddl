@@ -21,9 +21,11 @@
 
   (:init
 
+    ; C'è un problema nelle condizioni iniziali
+
   	(depot-at depot)
 
-    (at r1 depot) (at r2 depot) ;robot one and robot two are at the same place (Depot)
+    (at r1 depot)  (at r2 depot);robot one and robot two are at the same place (Depot)
     (at ca depot) (at cb depot) ;carrier one and carrier two are at the same place (Depot)
   	(at b1 depot) (at b2 depot) (at b3 depot) ;box one box 2 and box 3 are at the same place (Depot)
   	(at food depot) (at medicine depot) (at tool depot) ;food medicine and tools are at the same place (Depot)
@@ -38,16 +40,20 @@
   (:goal
 
     (and
-    	(satisfied-with-at-least-one p1 food tool)
-      (has-content p2 medicine)
+
+        (satisfied-with-at-least-one p1 food tool)
+        (has-content p2 medicine)
     	(has-content p3 medicine)
-    	(has-content p4 food)
+
     	(has-content p4 medicine)
+    	(has-content p4 food)
+
     	(has-content p5 food)
     	(has-content p5 medicine)
     	(has-content p5 tool)
+
     	(has-content p6 food)
-    	(has-content p6 medicine)
+        (has-content p6 medicine)
     	(has-content p6 tool)
     )
 

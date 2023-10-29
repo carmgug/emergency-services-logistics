@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.stream.Collectors;
 
 /**
  * This class implements A* search strategy.
@@ -66,8 +67,7 @@ public final class AStar extends AbstractStateSpaceSearch {
     public Node search(final Problem codedProblem) {
         Objects.requireNonNull(codedProblem);
         final long begin = System.currentTimeMillis();
-        final StateHeuristic heuristic = StateHeuristic.getInstance(StateHeuristic.Name.FAST_FORWARD, codedProblem);
-        System.out.println("CIAO");
+        final StateHeuristic heuristic = StateHeuristic.getInstance(this.getHeuristic(), codedProblem);
         final EslHeuristic my_heuristic= EslHeuristic.getInstance(codedProblem);
         // Get the initial state from the planning problem
         final State init = new State(codedProblem.getInitialState());
@@ -92,6 +92,8 @@ public final class AStar extends AbstractStateSpaceSearch {
         while (!open.isEmpty() && solution == null && time < timeout) {
             // Pop the first node in the pending list open
             final Node current = open.poll();
+            //if(current.getAction()!=-1) System.out.println(codedProblem.toString(codedProblem.getActions().get(current.getAction())));
+
             openSet.remove(current);
             closeSet.put(current, current);
             // If the goal is satisfied in the current node then extract the search and return it
@@ -99,16 +101,31 @@ public final class AStar extends AbstractStateSpaceSearch {
                 solution = current;
             } else {
                 // Try to apply the operators of the problem to this node
+                //int NumeroDiAzioniOrig=codedProblem.getActions().size();
+                //int Potate=codedProblem.getActions().stream().filter(action -> action.isApplicable(current)).collect(Collectors.toList()).size();
+                //int Potate2=codedProblem.getActions().stream().filter(action -> action.isApplicable(current) && my_heuristic.isWorth(current, action)).collect(Collectors.toList()).size();
+
+                //System.out.println(NumeroDiAzioniOrig+";"+Potate+";"+Potate2);
+                //System.out.println("INZIO");
+                //for(Action a:codedProblem.getActions().stream().filter(action -> action.isApplicable(current) && my_heuristic.isWorth(current, action)).collect(Collectors.toList())){
+
+                  //  System.out.println(codedProblem.toString(a));
+
+                //}
+                //System.out.println("FINE");
+
                 int index = 0;
                 for (Action op : codedProblem.getActions()) {
+
 
                     // Test if a specified operator is applicable in the current state
                     //
                     if (op.isApplicable(current) && my_heuristic.isWorth(current, op)) {
+
                         //System.out.println("IS APPLICABLE");
-                        if(op.getName().equals("move")){
-                            System.out.println(codedProblem.toString(op));
-                        }
+                        //if(op.getName().equals("move-carrier")){
+                            //System.out.println(codedProblem.toString(op));
+                        //}
                         Node state = new Node(current);
                         this.setCreatedNodes(this.getCreatedNodes() + 1);
 
@@ -135,7 +152,10 @@ public final class AStar extends AbstractStateSpaceSearch {
                                 state.setCost(g);
                                 state.setParent(current);
                                 state.setAction(index);
-                                state.setHeuristic(heuristic.estimate(state, codedProblem.getGoal()));
+                                state.setHeuristic(
+                                        heuristic.estimate(state, codedProblem.getGoal())+
+                                        my_heuristic.estimate(state,codedProblem.getGoal())
+                                );
                                 //tate.setHeuristic(my_heuristic.estimate(current,state,op,codedProblem.getGoal()));
                                 state.setDepth(current.getDepth() + 1);
                                 open.add(state);

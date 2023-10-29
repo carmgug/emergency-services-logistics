@@ -123,6 +123,7 @@ public final class EslPlanner extends AbstractStateSpacePlanner  {
     public static PlannerConfiguration getDefaultConfiguration() {
         PlannerConfiguration config = Planner.getDefaultConfiguration();
         config.setProperty(EslPlanner.SEARCH_STRATEGIES_SETTING,Arrays.asList(
+
                 SearchStrategy.Name.ASTAR,
                 SearchStrategy.Name.ENFORCED_HILL_CLIMBING
                 )

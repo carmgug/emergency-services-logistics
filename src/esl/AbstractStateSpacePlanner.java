@@ -15,6 +15,7 @@
 
 package esl;
 
+import esl.heuristic.EslHeuristic;
 import fr.uga.pddl4j.heuristics.state.StateHeuristic;
 import fr.uga.pddl4j.parser.RequireKey;
 import fr.uga.pddl4j.plan.Plan;
@@ -260,7 +261,8 @@ public abstract class AbstractStateSpacePlanner extends AbstractPlanner implemen
             final long begin = System.currentTimeMillis();
             final SearchStrategy.Name strategy = i.next();
             LOGGER.info("* Starting " + strategy.name() + " search with "
-                + this.getConfiguration().getProperty(AbstractStateSpacePlanner.HEURISTIC_SETTING) + " heuristic \n");
+                + this.getConfiguration().getProperty(AbstractStateSpacePlanner.HEURISTIC_SETTING) + " heuristic and " +
+                    EslHeuristic.NAME+" \n");
             StateSpaceSearch search = StateSpaceSearch.getInstance(strategy, this.getHeuristic(),
                 this.getHeuristicWeight(), timeout);
             final Node solution = search.searchSolutionNode(problem);

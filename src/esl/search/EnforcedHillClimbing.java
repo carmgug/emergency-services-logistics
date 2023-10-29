@@ -68,7 +68,7 @@ public final class EnforcedHillClimbing extends AbstractStateSpaceSearch {
         Objects.requireNonNull(codedProblem);
         final long begin = System.currentTimeMillis();
 
-        final StateHeuristic heuristic = StateHeuristic.getInstance(StateHeuristic.Name.AJUSTED_SUM2, codedProblem);
+        final StateHeuristic heuristic = StateHeuristic.getInstance(this.getHeuristic(), codedProblem);
         final EslHeuristic my_heuristic= EslHeuristic.getInstance(codedProblem);
 
         final LinkedList<Node> openList = new LinkedList<>();
@@ -127,9 +127,9 @@ public final class EnforcedHillClimbing extends AbstractStateSpaceSearch {
         final LinkedList<Node> successors = new LinkedList<>();
 
         int index = 0;
-        for (Action op : problem.getActions()) {
+        for (Action op : problem.getActions() ) {
             // Test if a specified operator is applicable in the current state
-            if (op.isApplicable(parent)) {
+            if (op.isApplicable(parent) && my_heuristic.isWorth(parent, op)) {
                 final State nextState = new State(parent);
                 op.getConditionalEffects().stream().filter(ce -> parent.satisfy(ce.getCondition())).forEach(ce ->
                         // Apply the effect to the successor node
@@ -143,8 +143,8 @@ public final class EnforcedHillClimbing extends AbstractStateSpaceSearch {
                 successor.setAction(index);
                 successor.setDepth(parent.getDepth() + 1);
                 successor.setHeuristic(
-                        my_heuristic.estimate(parent,successor,op,problem.getGoal())
-                        +heuristic.estimate(successor,problem.getGoal())
+                        heuristic.estimate(successor, problem.getGoal())+
+                                my_heuristic.estimate(successor,problem.getGoal())
                 );
                 successors.add(successor);
             }

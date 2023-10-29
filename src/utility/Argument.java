@@ -44,7 +44,7 @@ public class Argument implements Cloneable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Argument argument = (Argument) o;
-        return argument_id == argument.argument_id && argument_name.equals(argument.argument_name);
+        return argument_id == argument.argument_id || argument_name.equals(argument.argument_name); //Sia l'id che il nome di un argomento sono unici
 
     }
 

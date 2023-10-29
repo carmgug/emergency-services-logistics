@@ -13,20 +13,23 @@
 	)
 
 	(:types
-		slot - object; A space in a dimensionable object
-		box   - object; A box that can be filled with content
-		carrier - object; A carrier that can be used to transport boxes
-		robot  - object; A robot that can move around and interact with boxes, carrier and contenents
-		location - object; A place
-		content  - object; A type of object that can be placed in a box or given to a person
-		person - object; A person who can receive content
+		slot  ; * A space in a dimensionable object
+		box   ; * A box that can be filled with content
+		carrier ; * A carrier that can be used to transport boxes
+		robot   ; * A robot that can move around and interact with boxes, carrier and contenents
+		location  ; * A place
+		content   ; * A type of object that can be placed in a box or given to a person
+		person ; * A person who can receive content
 	)
 
 
 
 	(:predicates
-		(at ?o - object ?l - location); object ?o is at location ?l
+		(at ?o - object ?l - location) ;  object ?o is at location ?l
 		(depot-at ?l - location) ; A depot is present at location ?l
+
+
+
 		(full ?b - box) ; A box ?b that is full.
 		(empty ?s - slot ?c - carrier) ; A slot ?s of a carrier that is empty.
 		(on-carrier ?b - box ?c - carrier) ;  box ?b is on carrier ?c
@@ -44,7 +47,8 @@
 
 	(:action fill-box
 		:parameters ( ?r - robot ?b - box ?elem - content ?l - location )
-		:precondition (and (not (full ?b)) (depot-at ?l)
+		:precondition (and
+		    (not (full ?b)) (depot-at ?l)
 		 	(at ?r ?l) (at ?elem ?l) (at ?b ?l)
 		)
 		:effect (and (full ?b) (has-inside ?b ?elem))
@@ -54,9 +58,10 @@
 		:parameters (?r - robot ?p - person ?elem - content ?b - box   ?l - location
         	)
 		:precondition (and (at ?p ?l) (at ?b ?l) (at ?r ?l)
-			(has-inside ?b ?elem)
+			(has-inside ?b ?elem) (not (has-content ?p ?elem))
         	)
-		:effect (and (not (has-inside ?b ?elem))
+		:effect (and
+		    (not (has-inside ?b ?elem))
             (not (full ?b)) (has-content ?p ?elem)
         	)
 
@@ -64,9 +69,11 @@
 
 	(:action satisfied-with-at-least-one
 		:parameters ( ?p - person ?elem1 - content ?elem2 - content)
-		:precondition (or
-			(has-content ?p ?elem1) (has-content ?p ?elem2)
-        	)
+		:precondition (and
+		    (not (satisfied-with-at-least-one ?p ?elem1 ?elem2))
+		    (or
+			    (has-content ?p ?elem1) (has-content ?p ?elem2)
+        	))
 		:effect (satisfied-with-at-least-one ?p ?elem1 ?elem2)
 
 	)
@@ -85,10 +92,15 @@
 	)
 
 	(:action release-carrier
-		:parameters (?r - robot ?c - carrier)
-		:precondition (is-holding ?r ?c)
-		:effect (not (is-holding ?r ?c))
-
+		:parameters (?r - robot ?c - carrier ?l - location)
+		:precondition (and (is-holding ?r ?c) (depot-at ?l)
+		    (not
+            	(exists (?b - box)
+            	    (on-carrier ?b ?c)
+            	)
+            )
+		)
+		:effect (and (not (is-holding ?r ?c)) (at ?c ?l))
 	)
 
 	(:action load-carrier
@@ -106,18 +118,18 @@
 	)
 
 	(:action unload-carrier
-		:parameters (?r - robot ?b - box ?c - carrier ?s - slot ?l - location)
-		:precondition (and
-		    (is-holding ?r ?c)
-		    (at ?r ?l) (at ?c ?l)
-		    (on-carrier ?b ?c) (not (full ?b))
-		    (not (empty ?s ?c) )
-        )
-		:effect (and (not (on-carrier ?b ?c)) (at ?b ?l)
-			(empty ?s ?c)
-		)
+        		:parameters (?r - robot ?b - box ?c - carrier ?s - slot ?l - location)
+        		:precondition (and
+        		    (is-holding ?r ?c)
+        		    (at ?r ?l) (at ?c ?l) (depot-at ?l)
+        		    (on-carrier ?b ?c) (not (full ?b))
+        		    (not (empty ?s ?c) )
+                )
+        		:effect (and (not (on-carrier ?b ?c)) (at ?b ?l)
+        			(empty ?s ?c)
+        		)
 
-	)
+    )
 
 	(:action move
 		:parameters (?r - robot ?from ?to - location)

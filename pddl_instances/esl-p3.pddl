@@ -43,17 +43,22 @@
     	(satisfied-with-at-least-one p1 food tool)
         (has-content p2 medicine)
     	(has-content p3 medicine)
-    	(has-content p4 food)
+
     	(has-content p4 medicine)
+    	(has-content p4 food)
+
     	(has-content p5 food)
     	(has-content p5 medicine)
     	(has-content p5 tool)
+
     	(has-content p6 food)
     	(has-content p6 medicine)
     	(has-content p6 tool)
+
         (has-content p7 food)
     	(has-content p7 medicine)
     	(has-content p7 tool)
+
         (has-content p8 food)
     	(has-content p8 medicine)
     	(has-content p8 tool)

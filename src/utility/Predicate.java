@@ -3,6 +3,8 @@ package utility;
 import java.util.*;
 
 public class Predicate {
+
+
     // Predicate ID
     private int symbol;
     // Predicate name
@@ -21,6 +23,23 @@ public class Predicate {
             String argument_name = arguments_name[i + 1];
             arguments.add(new Argument(argument_id, argument_name));
         }
+    }
+
+    public Predicate(String name,List<Argument> arguments){
+        this.symbol=-1;
+        this.name=name;
+        this.arguments=new LinkedList<>();
+        for(Argument arg:arguments){
+            arguments.add(arg.clone());
+        }
+    }
+
+    public Predicate(String name,Argument argument){
+        this.symbol=-1;
+        this.name=name;
+        this.arguments=new LinkedList<>();
+        this.arguments.add(argument);
+
     }
 
 
@@ -76,7 +95,8 @@ public class Predicate {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Predicate predicate = (Predicate) o;
-        return symbol == predicate.symbol && Objects.equals(name, predicate.name) && Objects.equals(arguments, predicate.arguments);
+        return (symbol == predicate.symbol || name.equals(predicate.name)) && //Il nome e il simbolo di un predicato sono univici.
+                arguments.equals(predicate.arguments);
     }
 
     @Override
