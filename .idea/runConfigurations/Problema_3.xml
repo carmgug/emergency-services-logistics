@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Problema 3" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="esl.EslPlanner" />
+    <module name="Progetto_IA" />
+    <option name="PROGRAM_PARAMETERS" value="pddl_instances/esl-domain.pddl pddl_instances/esl-p3.pddl -e AJUSTED_SUM -l INFO" />
+    <option name="VM_PARAMETERS" value="-Xmx8G" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

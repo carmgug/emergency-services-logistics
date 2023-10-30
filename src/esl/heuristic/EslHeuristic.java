@@ -142,10 +142,6 @@ public final class EslHeuristic {
                 return evaluateGiveContent(current,op);
             case "satisfied-with-at-least-one":
                 return evaluatesatisfiedWithAtLeastOne(current,op);
-            case "release-carrier":
-                return false;
-            case "unload-carrier":
-                return false;
             default:
                 return true;
         }
@@ -263,21 +259,15 @@ public final class EslHeuristic {
         List<Predicate> allGoals=getPredicates(problem.getGoal().getPositiveFluents().stream().toArray());
         List<Predicate> goalAlreadySatisfied=getGoalAlreadySatisfied(state,allGoals);
         List<Predicate> goalNotAlreadySatisfied=getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
-        int departure_id=parameters[1];
         int des_id=parameters[2];
 
 
-        //Caso base: Se la location di partenza coincide con la location di arrivo allora sto fermo.
-        if(departure_id==des_id){
-            return false;
-        }
-
-        //Caso base2: Se ho già effettuato una move precedentemente siccome mi muovo verso il deposito se ho uno spazio libero o mi muovo verso
+        //Non cambia molto se la tengo: Se ho già effettuato una move precedentemente siccome mi muovo verso il deposito se ho uno spazio libero o mi muovo verso
         //Destinazioni in cui ci sono persone che vogliono ciò che ho nel carrello allora non do la possibilità di rimuovermi di nuovo
-        Action previous_op = current.getAction()!=-1 ? problem.getActions().get(current.getAction()) : null;
-        if(previous_op!= null && previous_op.getName().equals(op.getName())){
-            return false;
-        }
+        //Action previous_op = current.getAction()!=-1 ? problem.getActions().get(current.getAction()) : null;
+        //if(previous_op!= null && previous_op.getName().equals(op.getName())){
+          //  return false;
+        //}
 
         //Caso 1: Mi muovo verso il deposito se e soltano se ho almeno uno spazio libero sul carrello o ho una cassa vuota(Altrimenti non posso caricare nulla);
         if(state.stream().filter(x-> x.getName().equals("depot-at")).anyMatch(x -> x.getArguments().get(0).getArgument_id()==des_id)){
@@ -292,8 +282,8 @@ public final class EslHeuristic {
             return (empty_spaces+empty_boxes_on_carrier)>0;
         }
 
-        //Caso 3:
-        //Mi muovo solo verso destinazioni, che sono diverse dal deposito, se ci sono persone che voglio ciò che ho nel carrello
+        //Caso 2:
+        //Mi muovo solo verso destinazioni, che sono diverse dal deposito, se ci sono persone che vogliono ciò che ho nel carrello
         for(Predicate p: state.stream().filter(p -> p.getName().equals("at")).collect(Collectors.toList())){
             //il Predicato p ha forma (at object location)
             int location=p.getArguments().get(1).getArgument_id();
@@ -331,9 +321,6 @@ public final class EslHeuristic {
 
         }
 
-
-        //Caso 2:
-        //Muovere il carrello al deposito quando è pieno è ammissibile ma non è un azione utile
         return false;
     }
     private boolean evaluateMove(Node current, Action op){
@@ -383,11 +370,29 @@ public final class EslHeuristic {
         //Dobbiamo effettuare tante azioni quante sono i posti differenti in cui dobbiamo ancora andare;
         estimated_value+=getPositionsToReach(next_state,goals_not_satisfied_yet);
         //Dobbiamo effettuare tante azioni quanto sono le scatole da caricare sul carrier;
-        estimated_value+=getBoxToFillAndToLoad(next_state,goals_not_satisfied_yet);
-
+        //estimated_value+=getBoxToFill(next_state,goals_not_satisfied_yet);
+        estimated_value+=checkBoxes(next_state,goals_not_satisfied_yet);
 
 
         return estimated_value;
+    }
+
+    private int getBoxToLoadOnCarrier(List<Predicate> next_state){
+        //Dobbiamo effettuare tante azioni quante sono le scatole piene da caricare sul carrier
+        //Da migliorare;
+        int number_of_box_to_load=0;
+        //Potenzialmente il numero di casse da caricare sul carrier sono quelle piene
+        List<Argument> list_of_full_boxes=next_state.stream().filter(predicate -> predicate.getName().equals("full"))
+                .map(predicate -> predicate.getArguments().get(0))
+                .collect(Collectors.toList());
+        number_of_box_to_load+=list_of_full_boxes.size();
+
+        //Dobbiamo però sottrarre il numero di box piene che sono già presenti su un carrier.
+        number_of_box_to_load-=(next_state.stream().filter(predicate -> predicate.getName().equals(("already-taken")))
+                .map(predicate -> predicate.getArguments().get(0))
+                .filter(list_of_full_boxes::contains).count());
+
+        return number_of_box_to_load;
     }
 
     private int getPositionsToReach(List<Predicate> next_state,List<Predicate> goals_not_satisfied_yet){
@@ -417,7 +422,7 @@ public final class EslHeuristic {
         return postions_to_reach;
     }
 
-    private int getBoxToFillAndToLoad(List<Predicate> next_state,List<Predicate> goals_not_satisfied_yet){
+    private int getBoxToFill(List<Predicate> next_state,List<Predicate> goals_not_satisfied_yet){
         int res=0;
         List<Predicate> goals_not_satisfied=new LinkedList<>(goals_not_satisfied_yet); //La modificheremo quindi creaiamoci una copia
 
@@ -460,34 +465,6 @@ public final class EslHeuristic {
 
 
 
-
-    public double estimate_old(Node current, Node next, Action a, Condition goal) {
-
-
-
-        double n_goal_alredy_satisfaied=0;
-        double estimated_value=0;
-
-        List<Predicate> new_state= getPredicates(next.stream().toArray());
-        List<Predicate> old_state= getPredicates(current.stream().toArray());
-        List<Predicate> goals= getPredicates(goal.getPositiveFluents().stream().toArray());
-        List<Predicate> goals_already_satisfied=getGoalAlreadySatisfied(new_state,goals);
-        List<Predicate> goals_not_satisfied_yet=getGoalNotAlreadySatisfied(goals,goals_already_satisfied);
-
-
-        estimated_value+=checkBoxes(new_state,goals_already_satisfied,goals_not_satisfied_yet);
-        estimated_value+=checkCarrier(new_state,goals_already_satisfied,goals_not_satisfied_yet);
-
-
-        //Se in questo nodo ho effettuato un azione che mi ha portato a una vicinaza nella soddifazione dei goal allora ritorno subito
-        if(getGoalAlreadySatisfied(old_state,goals).size()<goals_already_satisfied.size()) {
-            return Double.MIN_VALUE;
-        }
-
-
-        return estimated_value*goals_not_satisfied_yet.size();
-    }
-
     private int countOccurrences(List<Predicate> list,String predicate){
         int count=0;
         for (Predicate p: list){
@@ -518,14 +495,14 @@ public final class EslHeuristic {
         return numEmptySpacesInCurrentState*c1+numOfUnoccupiedCarts;
     }
 
-    private double checkBoxes(List<Predicate> predicates, List<Predicate> goalsAlreadySatisfied, List<Predicate> goalsNotSatisfiedYet) {
+    private int checkBoxes(List<Predicate> predicates, List<Predicate> goalsNotSatisfiedYet) {
         //Il numero di tutte le casse che possono essere full meno il numero delle casse che sono a full in questo stato.
-        int numEmptyBoxesInCurrentState = n_boxes-countOccurrences(predicates, "full");
+        //int numEmptyBoxesInCurrentState = n_boxes-countOccurrences(predicates, "full");
 
-        if (numEmptyBoxesInCurrentState == 0) {
-            // If there are no boxes to fill, return -1
-            return 0;
-        }
+        //if (numEmptyBoxesInCurrentState == 0) {
+            // If there are no boxes to fill, return 0
+          //  return 0;
+        //}
 
         // List of elements contained in the boxes
         List<Argument> boxContents = predicates.stream()
@@ -537,7 +514,7 @@ public final class EslHeuristic {
         List<Argument> requiredGoalElements = getListOfElementsRequiredToAchiveTheGoal(goalsNotSatisfiedYet);
 
         // Number of elements present in requiredGoalElements but not in boxContents: these are the items not yet loaded in the boxes but are needed
-        double x1 = requiredGoalElements.stream()
+        int x1 = (int) requiredGoalElements.stream()
                 .filter(arg -> {
                     boolean contains = boxContents.contains(arg);
                     if (contains) {
@@ -548,58 +525,8 @@ public final class EslHeuristic {
                 .count();
 
         // Number of elements present in boxContents but not in requiredGoalElements: these are the loaded items that are not needed
-        double x2 = boxContents.size();
+        int x2 = boxContents.size();
 
-        return (x1*2 + (x2*3))*6;
+        return (x1 + x2);
     }
-
-    /*
-    private double checkBoxes(List<Predicate> predicates,List<Predicate> goals_already_satisfied,List<Predicate> goals_not_satisfied_yet){
-        int num_full_box_in_current_state=countOccurrences(predicates,"full");
-        int num_empty_box_in_current_state=countOccurrences(predicates,"empty");
-        if(num_empty_box_in_current_state==0){
-            //Se non ci sono casse da riempire ritorna -1
-            return -1;
-        }
-
-        //Lista degli elementi contenuti nelle casse
-        List<Argument> boxContents=predicates.stream()
-                .filter(p -> p.getName().equals("has-inside"))
-                .map(p -> p.getArguments().get(1))
-                .collect(Collectors.toList());
-        //Lista degli elementi necessari per raggiungere il goal
-        List<Argument> requiredGoalElements=goals_not_satisfied_yet.stream()
-                .flatMap(p -> {
-                    if ("satisfied-with-at-least-one".equals(p.getName()) && p.getArguments().size() >= 3) {
-                        // Se il predicato è "satisfied-with-at-least-one" ci sono due oggetti
-                        return Stream.of(
-                                p.getArguments().get(1).clone(),
-                                p.getArguments().get(2).clone()
-                        );
-                    } else {
-                        // Altrimenti, restituisci solo il secondo argomento
-                        return Stream.of(p.getArguments().get(1).clone());
-                    }
-                })
-                .collect(Collectors.toList());
-        //Numero di oggetti presenti in required ma non in box of Contents: sarebbero gli oggetti non ancora caricati sulle casse ma che servono
-        double x1=0;
-        //Numero di oggetti presenti in box of Contents ma non in required: sarebbero gli oggetti caricati ma che non servono
-        double x2=0;
-        for(Argument arg: requiredGoalElements ){
-            if(boxContents.contains(arg)){
-                boxContents.remove(arg);
-            }
-            else x1++;
-        }
-        //Gli oggetti presenti in boxContents non eliminati allora non erano presenti in required quindi:
-        x2=boxContents.size();
-
-        //Se nelle box è presente un elemento che non serve per soddisfare il goal allora dobbiamo mettere un costo elevato
-        //Vado a mettere per ogni cibo mancante un costo pari a 1 in più
-
-
-        return x1+ (x2*2);
-    }
-    */
 }

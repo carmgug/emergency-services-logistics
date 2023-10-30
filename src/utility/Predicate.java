@@ -5,6 +5,8 @@ import java.util.*;
 public class Predicate {
 
 
+
+
     // Predicate ID
     private int symbol;
     // Predicate name

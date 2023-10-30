@@ -54,6 +54,15 @@
 		:effect (and (full ?b) (has-inside ?b ?elem))
 	)
 
+	(:action unfill-box
+	    :parameters (?r - robot ?b - box ?elem - content ?l - location)
+	    :precondition (and
+	        (full ?b) (has-inside ?b ?elem)
+	        (depot-at ?l) (at ?r ?l) (at ?b ?l)
+	    )
+	    :effect (and (not (full ?b)) (not (has-inside ?b ?elem)))
+	)
+
 	(:action give-content
 		:parameters (?r - robot ?p - person ?elem - content ?b - box   ?l - location
         	)
@@ -109,6 +118,7 @@
 		    (at ?b ?l) (at ?r ?l) (at ?c ?l)
 			(not (already-taken ?b))
 			(empty ?s ?c)
+
 		)
 
 		:effect (and (on-carrier ?b ?c) (already-taken ?b)
@@ -144,7 +154,7 @@
 
 	(:action move-carrier
 		:parameters (?r - robot ?from ?to -location ?c - carrier)
-		:precondition (and (at ?r ?from) (at ?c ?from) (is-holding ?r ?c))
+		:precondition (and (at ?r ?from) (not(at ?r ?to)) (at ?c ?from) (is-holding ?r ?c))
 		:effect (and (not (at ?r ?from)) (not (at ?c ?from))
             (at ?r ?to) (at ?c ?to)
             (forall (?b - box)
