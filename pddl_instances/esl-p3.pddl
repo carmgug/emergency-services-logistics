@@ -5,18 +5,18 @@
 
   (:objects
 
-   r1 r2 - robot
+
    p1 p2 p3 p4 p5 p6 p7 p8 - person
    b1 b2 b3 b4 - box
    depot l1 l2 l3 l4 l5 l6 l7 - location
    ca cb - carrier
    s1-ca s2-ca s1-cb s2-cb - slot
-
    food - content
 
    medicine - content
 
    tool - content
+   r1 r2 - robot
 
    )
 

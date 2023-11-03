@@ -5,7 +5,7 @@
 
   (:objects
 
-   r1 r2 - robot
+
    p1 p2 p3 p4 p5 p6 - person
    b1 b2 b3 - box
    depot l1 l2 l3 l4 l5 - location
@@ -14,6 +14,7 @@
    food - content
    medicine - content
    tool - content
+   r1 r2 - robot
 
    )
 

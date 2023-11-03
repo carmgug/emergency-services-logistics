@@ -1,4 +1,4 @@
-package utility;
+package esl.heuristic;
 
 import java.util.Objects;
 

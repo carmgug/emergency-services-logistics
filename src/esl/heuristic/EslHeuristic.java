@@ -1,57 +1,48 @@
 package esl.heuristic;
 
-import com.sun.org.apache.xpath.internal.Arg;
+import fr.uga.pddl4j.heuristics.state.RelaxedGraphHeuristic;
 import fr.uga.pddl4j.parser.TypedSymbol;
 import fr.uga.pddl4j.problem.Fluent;
 import fr.uga.pddl4j.problem.Problem;
+import fr.uga.pddl4j.problem.State;
 import fr.uga.pddl4j.problem.operator.Action;
 import fr.uga.pddl4j.problem.operator.Condition;
-import utility.Argument;
-import utility.Predicate;
 import fr.uga.pddl4j.planners.statespace.search.Node;
-
-
+import utility.Utility;
 
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public final class EslHeuristic {
+public final class EslHeuristic extends RelaxedGraphHeuristic {
 
     public final static String NAME = "EslHeuristic By Carmelo-Carmelo-Vittorio";
 
     private static volatile EslHeuristic instance = null;
+
     private final Problem problem;
 
     // idConditionMap: Map that translates the ID of an existing predicate within the problem
     // into a more understandable object. It allows associating an ID with a predicate,
     // providing a convenient way to access and interpret conditions within the system.
-    private Map<Integer,Predicate> idConditionMap;
+    private final Map<Integer,Predicate> idConditionMap;
     // The typeToArguments map associates the argument type name with a list of instantiated arguments in the problem.
     // For example, it might look like: robot:[<-1:r1>, <-1:r2>]
-    private Map<String,List<Argument>> typeToArguments;
-    private List<Predicate> allPossiblePredicates;
-
-
-
-    //
+    private final Map<String,List<Argument>> typeToArguments;
     private int n_boxes;
     private int n_carrier;
     private int n_robot;
-
     //Map containing pairs <String, Integer>, where String refers to the unique name of the carrier,
     // and Integer indicates the available space on that carrier.
     private Map<String,Integer> carrierInfo;
 
-
-
     public EslHeuristic(Problem problem){
+        super(problem);
+
         this.problem=problem;
         this.idConditionMap=new HashMap<>();
-        this.allPossiblePredicates=new LinkedList<>();
         typeToArguments=new HashMap<>();
-        createIdConditionMapAndAllPossiblePredicates();
+        createIdConditionMap();
         createTypeToArguments();
 
 
@@ -82,30 +73,33 @@ public final class EslHeuristic {
 
     }
 
-    private void createIdConditionMapAndAllPossiblePredicates(){
+    private void createIdConditionMap(){
         Integer i=0;
         for (Fluent f:problem.getFluents()){
-            String[] curr=problem.toString(f).replaceAll("[\\(\\)]", "").split(" ");
+            String[] curr=problem.toString(f).replaceAll("[()]", "").split(" ");
             Predicate curr_p=new Predicate(f.getSymbol(),curr[0],f.getArguments(),curr);
             idConditionMap.put(i,curr_p);
-            allPossiblePredicates.add(curr_p);
             i++;
         }
-        return ;
     }
 
     private void createTypeToArguments() {
+        int id=0; //Gli oggetti sono inseriti nella lista in maniera ordinata
         for(TypedSymbol<String> elem:problem.getParsedProblem().getObjects()){
             String type=elem.getTypes().get(0).toString();
             String obj=elem.getValue();
-            //TODO ATTENZIONE NON HO MESSO UN ID ALL'ARGOMENTO PERCHè DEVO LEGGERE LA DOCUMENTAZIONE
+
             if(!typeToArguments.containsKey(type)) {
                 typeToArguments.put(type, new LinkedList<>());
-                typeToArguments.get(type).add(new Argument(-1,obj));
+
+                typeToArguments.get(type).add(new Argument(id,obj));
             }
             else
-                typeToArguments.get(type).add(new Argument(-1,obj));
+                typeToArguments.get(type).add(new Argument(id,obj));
+            id++;
         }
+
+
     }
 
     public static EslHeuristic getInstance(Problem problem){
@@ -126,7 +120,6 @@ public final class EslHeuristic {
         return res;
     }
 
-
     public boolean isWorth(Node current, Action op){
 
         String action_name=op.getName();
@@ -141,13 +134,13 @@ public final class EslHeuristic {
             case "give-content":
                 return evaluateGiveContent(current,op);
             case "satisfied-with-at-least-one":
-                return evaluatesatisfiedWithAtLeastOne(current,op);
+                return evaluateSatisfiedWithAtLeastOne(current,op);
             default:
                 return true;
         }
     }
 
-    private boolean evaluatesatisfiedWithAtLeastOne(Node current, Action op){
+    private boolean evaluateSatisfiedWithAtLeastOne(Node current, Action op){
         int[] parameters= op.getInstantiations(); //:parameters (satisfied-with-at-least-one ?p ?content ?content)
         int person_id=parameters[0];
         int element_id_1=parameters[1];
@@ -156,8 +149,8 @@ public final class EslHeuristic {
         // Get goal not already satisfied.
         List<Predicate> state= getPredicates(current.stream().toArray()); //Predicati Veri nello stato corrente
         List<Predicate> allGoals=getPredicates(problem.getGoal().getPositiveFluents().stream().toArray());
-        List<Predicate> goalAlreadySatisfied=getGoalAlreadySatisfied(state,allGoals);
-        List<Predicate> goalNotAlreadySatisfied=getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
+        List<Predicate> goalAlreadySatisfied=Utility.getGoalAlreadySatisfied(state,allGoals);
+        List<Predicate> goalNotAlreadySatisfied=Utility.getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
 
 
         for(Predicate p:goalNotAlreadySatisfied.stream().filter(p-> p.getName().equals("satisfied-with-at-least-one")).collect(Collectors.toList())){
@@ -175,8 +168,6 @@ public final class EslHeuristic {
 
     }
 
-
-
     private boolean evaluateGiveContent(Node current,Action op){
         int[] parameters= op.getInstantiations(); //:parameters (?r - robot ?p - person ?elem - content ?b - box   ?l - location)
         int person_id=parameters[1];
@@ -185,8 +176,8 @@ public final class EslHeuristic {
         // Goal not already satisfied.
         List<Predicate> state= getPredicates(current.stream().toArray()); //Predicati Veri nello stato currente
         List<Predicate> allGoals=getPredicates(problem.getGoal().getPositiveFluents().stream().toArray());
-        List<Predicate> goalAlreadySatisfied=getGoalAlreadySatisfied(state,allGoals);
-        List<Predicate> goalNotAlreadySatisfied=getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
+        List<Predicate> goalAlreadySatisfied=Utility.getGoalAlreadySatisfied(state,allGoals);
+        List<Predicate> goalNotAlreadySatisfied=Utility.getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
 
 
         for(Predicate p:goalNotAlreadySatisfied){
@@ -208,21 +199,18 @@ public final class EslHeuristic {
         //Carico la box solo di cose che mi servono per raggiungere il goal
         List<Predicate> state= getPredicates(current.stream().toArray()); //Predicati Veri nello stato corrente
         List<Predicate> allGoals=getPredicates(problem.getGoal().getPositiveFluents().stream().toArray());
-        List<Predicate> goalAlreadySatisfied=getGoalAlreadySatisfied(state,allGoals);
-        List<Predicate> goalNotAlreadySatisfied=getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
+        List<Predicate> goalAlreadySatisfied=Utility.getGoalAlreadySatisfied(state,allGoals);
+        List<Predicate> goalNotAlreadySatisfied=Utility.getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
 
         // List of elements required to achieve the goal
-        List<Argument> requiredGoalElements=getListOfElementsRequiredToAchiveTheGoal(goalNotAlreadySatisfied);
+        List<Argument> requiredGoalElements=Utility.getListOfElementsRequiredToAchiveTheGoal(goalNotAlreadySatisfied);
         // List of elements contained in all the boxes of the world
         List<Argument> boxContents = state.stream()
                 .filter(p -> "has-inside".equals(p.getName()))
                 .map(p -> p.getArguments().get(1))
                 .collect(Collectors.toList());
-        for(Argument arg: boxContents){
-            if(requiredGoalElements.contains(arg)){
-                requiredGoalElements.remove(arg);
-            }
-        }
+
+        requiredGoalElements.removeAll(boxContents);
 
         //Effettuo il check se l'elemento che voglio aggiungere è presente negli elementi richiesti.
         for(Argument arg:requiredGoalElements){
@@ -236,29 +224,12 @@ public final class EslHeuristic {
         return false;
     }
 
-    private List<Argument> getListOfElementsRequiredToAchiveTheGoal(List<Predicate> goalsNotSatisfiedYet){
-        return  goalsNotSatisfiedYet.stream()
-                .flatMap(p -> {
-                    if ("satisfied-with-at-least-one".equals(p.getName()) && p.getArguments().size() >= 3) {
-                        // If the predicate is "satisfied-with-at-least-one," there are two objects
-                        return Stream.of(
-                                p.getArguments().get(1).clone(),
-                                p.getArguments().get(2).clone()
-                        );
-                    } else {
-                        // Otherwise, return only the second argument
-                        return Stream.of(p.getArguments().get(1).clone());
-                    }
-                })
-                .collect(Collectors.toList());
-    }
-
     private boolean evaluateMoveCarrier(Node current,Action op){
         int[] parameters= op.getInstantiations(); //:parameters (?r, ?from, ?to ,?c )
         List<Predicate> state= getPredicates(current.stream().toArray()); //Predicati Veri nello stato currente
         List<Predicate> allGoals=getPredicates(problem.getGoal().getPositiveFluents().stream().toArray());
-        List<Predicate> goalAlreadySatisfied=getGoalAlreadySatisfied(state,allGoals);
-        List<Predicate> goalNotAlreadySatisfied=getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
+        List<Predicate> goalAlreadySatisfied=Utility.getGoalAlreadySatisfied(state,allGoals);
+        List<Predicate> goalNotAlreadySatisfied=Utility.getGoalNotAlreadySatisfied(allGoals,goalAlreadySatisfied);
         int des_id=parameters[2];
 
 
@@ -273,12 +244,13 @@ public final class EslHeuristic {
         if(state.stream().filter(x-> x.getName().equals("depot-at")).anyMatch(x -> x.getArguments().get(0).getArgument_id()==des_id)){
             //Se esiste almeno uno spazio libero sul carrello oppure se almeno una cassa su di me è vuota allora torno al deposito altrimenti no.
             int carrier_id=parameters[3];
-            int empty_spaces=state.stream().filter(x-> x.getName().equals("empty")).filter(x -> x.getArguments().get(1).getArgument_id()==carrier_id).collect(Collectors.toList()).size();
+            int empty_spaces= (int) state.stream().filter(x -> x.getName().equals("empty")
+                    && x.getArguments().get(1).getArgument_id() == carrier_id).count();
             //(on-carrier ?b - box ?c - carrier)
-            int empty_boxes_on_carrier=state.stream().filter(x -> x.getName().equals("on-carrier")).filter(on_carrier-> on_carrier.containsArgByID(carrier_id))
+            //Lista di casse che sono sul carrier corrente e sono vuote;
+            int empty_boxes_on_carrier= (int) state.stream().filter(x -> x.getName().equals("on-carrier") && x.containsArgByID(carrier_id))
                     .map(x -> x.getArguments().get(0))//Lista di casse che sono sul carrier corrente (che stiamo muovendo)
-                    .filter(box -> !state.contains(new Predicate("full",box)))//Lista di casse che sono sul carrier corrente e sono vuote;
-                    .collect(Collectors.toList()).size();//(full ?b - box) //Prendiamo il numero di casse che sono sul carrier corrente e sono vuore;
+                    .filter(box -> !state.contains(new Predicate("full", box))).count();//(full ?b - box) //Prendiamo il numero di casse che sono sul carrier corrente e sono vuore;
             return (empty_spaces+empty_boxes_on_carrier)>0;
         }
 
@@ -352,51 +324,37 @@ public final class EslHeuristic {
         return false;
     }
 
-    public double estimate( Node next, Condition goal){
-
-        double estimated_value=0;
-
+    public int estimate(State next, Condition goal){
+        super.setAdmissible(false);
+        int estimated_value=0;
 
         List<Predicate> next_state= getPredicates(next.stream().toArray());
         List<Predicate> goals= getPredicates(goal.getPositiveFluents().stream().toArray());
-        List<Predicate> goals_already_satisfied=getGoalAlreadySatisfied(next_state,goals);
-        List<Predicate> goals_not_satisfied_yet=getGoalNotAlreadySatisfied(goals,goals_already_satisfied);
+        List<Predicate> goals_already_satisfied= Utility.getGoalAlreadySatisfied(next_state,goals);
+        List<Predicate> goals_not_satisfied_yet=Utility.getGoalNotAlreadySatisfied(goals,goals_already_satisfied);
 
         //Dobbiamo stimare la lontanza dal goal;
 
-
-        //Dobbiamo effettuare tante azioni ancora quanti sono i goal da soddisfare;
+        //Dobbiamo ancora effettuare tante azioni ancora quanti sono i goal da soddisfare
         estimated_value+=goals_not_satisfied_yet.size();
-        //Dobbiamo effettuare tante azioni quante sono i posti differenti in cui dobbiamo ancora andare;
+        //Dobbiamo ancora effettuare tante azioni quante sono i posti differenti in cui dobbiamo ancora andare;
         estimated_value+=getPositionsToReach(next_state,goals_not_satisfied_yet);
+        //Dobbiamo ancora effettuare tante azioni quanti sono gli item richiesti non ancora caricati nelle casse.
+        estimated_value+=checkBoxes(next_state,goals_not_satisfied_yet);
         //Dobbiamo effettuare tante azioni quanto sono le scatole da caricare sul carrier;
         //estimated_value+=getBoxToFill(next_state,goals_not_satisfied_yet);
-        estimated_value+=checkBoxes(next_state,goals_not_satisfied_yet);
+
 
 
         return estimated_value;
     }
 
-    private int getBoxToLoadOnCarrier(List<Predicate> next_state){
-        //Dobbiamo effettuare tante azioni quante sono le scatole piene da caricare sul carrier
-        //Da migliorare;
-        int number_of_box_to_load=0;
-        //Potenzialmente il numero di casse da caricare sul carrier sono quelle piene
-        List<Argument> list_of_full_boxes=next_state.stream().filter(predicate -> predicate.getName().equals("full"))
-                .map(predicate -> predicate.getArguments().get(0))
-                .collect(Collectors.toList());
-        number_of_box_to_load+=list_of_full_boxes.size();
-
-        //Dobbiamo però sottrarre il numero di box piene che sono già presenti su un carrier.
-        number_of_box_to_load-=(next_state.stream().filter(predicate -> predicate.getName().equals(("already-taken")))
-                .map(predicate -> predicate.getArguments().get(0))
-                .filter(list_of_full_boxes::contains).count());
-
-        return number_of_box_to_load;
+    public double estimate(Node next, Condition goal) {
+        return this.estimate((State) next,goal);
     }
 
     private int getPositionsToReach(List<Predicate> next_state,List<Predicate> goals_not_satisfied_yet){
-        int postions_to_reach=0;
+        int positions_to_reach;
         //Dobbiamo effettuare tante azioni quante sono i posti differenti in cui dobbiamo ancora andare;
         List<Predicate> robots_positions=next_state.stream().filter(p-> p.getName().equals("at") &&
                 typeToArguments.get("robot").contains(p.getArguments().get(0))).collect(Collectors.toList());
@@ -413,14 +371,45 @@ public final class EslHeuristic {
                                         if(location_r!=location_p)
                                             return true;
                                     }
-
                             return false;
                         }
                 )
                 .collect(Collectors.toList());
-        postions_to_reach=persons_positions_to_reach.size();
-        return postions_to_reach;
+        positions_to_reach=persons_positions_to_reach.size();
+        return positions_to_reach;
     }
+
+    private int checkBoxes(List<Predicate> predicates, List<Predicate> goalsNotSatisfiedYet) {
+        // List of elements contained in the boxes
+        List<Argument> boxContents = predicates.stream()
+                .filter(p -> "has-inside".equals(p.getName()))
+                .map(p -> p.getArguments().get(1))
+                .collect(Collectors.toList());
+
+        // List of elements required to achieve the goal
+        List<Argument> requiredGoalElements = Utility.getListOfElementsRequiredToAchiveTheGoal(goalsNotSatisfiedYet);
+
+        // Number of elements present in requiredGoalElements but not in boxContents: these are the items not yet loaded in the boxes but are needed
+        int x1 = (int) requiredGoalElements.stream()
+                .filter(arg -> {
+                    boolean removed = boxContents.remove(arg);
+                    //Se è stato rimosso allora era contenuto
+                    return !removed;
+                })
+                .count();
+
+        // Number of elements present in boxContents but not in requiredGoalElements: these are the loaded items that are not needed
+        int x2 = boxContents.size();
+
+        return (x1 + x2);
+    }
+
+
+
+    /*
+    --------------------------------------------------------------------------------------------------------------------
+        OLD METHODS
+     */
 
     private int getBoxToFill(List<Predicate> next_state,List<Predicate> goals_not_satisfied_yet){
         int res=0;
@@ -435,15 +424,12 @@ public final class EslHeuristic {
 
         //Vado a sottrarre il numero di casse contenenti già gli oggetti che devo consegnare.
         res-=next_state.stream().filter(p->{
-                boolean check_1=p.getName().equals("has-inside"); //(has-inside ?b ?elem)
-                if(!check_1) return false;
-                //Elemento nella cassa
-                int elem_id=p.getArguments().get(1).getArgument_id();
-                if(removeElementByID(goals_not_satisfied,elem_id)) { //Se l'elemento è cotenuto nei goal allora andiamo a sottrarlo
-                    return true;
-                }
-                return false;
-
+            boolean check_1=p.getName().equals("has-inside"); //(has-inside ?b ?elem)
+            if(!check_1) return false;
+            //Elemento nella cassa
+            int elem_id=p.getArguments().get(1).getArgument_id();
+            //Se l'elemento è cotenuto nei goal allora andiamo a sottrarlo
+            return Utility.removeElementByID(goals_not_satisfied, elem_id);
         }).count();
 
         //Quindi potenzialmente devo caricare res casse
@@ -451,82 +437,28 @@ public final class EslHeuristic {
         return res;
     }
 
-    private boolean removeElementByID(List<Predicate> predicates ,int element_id){
-        Iterator<Predicate> it=predicates.iterator();
-        while (it.hasNext()){
-            Predicate curr=it.next();
-            if(curr.containsArgByID(element_id)){
-                it.remove();
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-
-    private int countOccurrences(List<Predicate> list,String predicate){
-        int count=0;
-        for (Predicate p: list){
-            if(p.getName().equals(predicate)) count++;
-        }
-        return count;
-    }
-
-
-
-    private List<Predicate> getGoalAlreadySatisfied(List<Predicate> predicates,List<Predicate> goals){
-        return predicates.stream()
-                .filter(goals::contains)
-                .collect(Collectors.toList());
-    }
-
-    private List<Predicate> getGoalNotAlreadySatisfied(List<Predicate> goals,List<Predicate> goalsAlreadySatisfied){
-        return goals.stream()
-                .filter(goal -> !goalsAlreadySatisfied.contains(goal))
-                .collect(Collectors.toList());
-    }
-
-
-    private double checkCarrier(List<Predicate> predicates, List<Predicate> goalsAlreadySatisfied, List<Predicate> goalsNotSatisfiedYet){
-        double numEmptySpacesInCurrentState= countOccurrences(predicates,"empty");
+    private double checkCarrier(List<Predicate> predicates){
+        double numEmptySpacesInCurrentState= Utility.countOccurrences(predicates,"empty");
         double c1=5;
-        int numOfUnoccupiedCarts=this.n_carrier-countOccurrences(predicates,"is-holding");
+        int numOfUnoccupiedCarts=this.n_carrier-Utility.countOccurrences(predicates,"is-holding");
         return numEmptySpacesInCurrentState*c1+numOfUnoccupiedCarts;
     }
 
-    private int checkBoxes(List<Predicate> predicates, List<Predicate> goalsNotSatisfiedYet) {
-        //Il numero di tutte le casse che possono essere full meno il numero delle casse che sono a full in questo stato.
-        //int numEmptyBoxesInCurrentState = n_boxes-countOccurrences(predicates, "full");
 
-        //if (numEmptyBoxesInCurrentState == 0) {
-            // If there are no boxes to fill, return 0
-          //  return 0;
-        //}
-
-        // List of elements contained in the boxes
-        List<Argument> boxContents = predicates.stream()
-                .filter(p -> "has-inside".equals(p.getName()))
-                .map(p -> p.getArguments().get(1))
+    private int getBoxToLoadOnCarrier(List<Predicate> next_state){
+        //Dobbiamo effettuare tante azioni quante sono le scatole piene da caricare sul carrier
+        int number_of_box_to_load=0;
+        //Potenzialmente il numero di casse da caricare sul carrier sono quelle piene
+        List<Argument> list_of_full_boxes=next_state.stream().filter(predicate -> predicate.getName().equals("full"))
+                .map(predicate -> predicate.getArguments().get(0))
                 .collect(Collectors.toList());
+        number_of_box_to_load+=list_of_full_boxes.size();
 
-        // List of elements required to achieve the goal
-        List<Argument> requiredGoalElements = getListOfElementsRequiredToAchiveTheGoal(goalsNotSatisfiedYet);
+        //Dobbiamo però sottrarre il numero di box piene che sono già presenti su un carrier.
+        number_of_box_to_load-=(next_state.stream().filter(predicate -> predicate.getName().equals(("already-taken")))
+                .map(predicate -> predicate.getArguments().get(0))
+                .filter(list_of_full_boxes::contains).count());
 
-        // Number of elements present in requiredGoalElements but not in boxContents: these are the items not yet loaded in the boxes but are needed
-        int x1 = (int) requiredGoalElements.stream()
-                .filter(arg -> {
-                    boolean contains = boxContents.contains(arg);
-                    if (contains) {
-                        boxContents.remove(arg);
-                    }
-                    return !contains;
-                })
-                .count();
-
-        // Number of elements present in boxContents but not in requiredGoalElements: these are the loaded items that are not needed
-        int x2 = boxContents.size();
-
-        return (x1 + x2);
+        return number_of_box_to_load;
     }
 }
