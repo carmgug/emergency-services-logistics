@@ -66,8 +66,8 @@ public final class AStar extends AbstractStateSpaceSearch {
     public Node search(final Problem codedProblem) {
         Objects.requireNonNull(codedProblem);
         final long begin = System.currentTimeMillis();
-        final StateHeuristic heuristic = StateHeuristic.getInstance(this.getHeuristic(), codedProblem);
-        final EslHeuristic my_heuristic= EslHeuristic.getInstance(codedProblem);
+
+        final EslHeuristic heuristic= EslHeuristic.getInstance(codedProblem, this.getHeuristic());
         // Get the initial state from the planning problem
         final State init = new State(codedProblem.getInitialState());
         // Initialize the closed list of nodes (store the nodes explored)
@@ -108,7 +108,7 @@ public final class AStar extends AbstractStateSpaceSearch {
 
                     // Test if a specified operator is applicable in the current state
                     //
-                    if (op.isApplicable(current) && my_heuristic.isWorth(current, op)) {
+                    if (op.isApplicable(current) && heuristic.isWorth(current, op)) {
 
                         //System.out.println("IS APPLICABLE");
                         //if(op.getName().equals("move-carrier")){
@@ -122,6 +122,7 @@ public final class AStar extends AbstractStateSpaceSearch {
                         // Apply the effect to the successor node
                         op.getConditionalEffects().stream().filter(ce -> current.satisfy(ce.getCondition()))
                             .forEach(ce -> state.apply(ce.getEffect()));
+
                         final double g = current.getCost() + op.getCost().getValue();
                         Node result = openSet.get(state);
                         if (result == null) {
@@ -141,8 +142,7 @@ public final class AStar extends AbstractStateSpaceSearch {
                                 state.setParent(current);
                                 state.setAction(index);
                                 state.setHeuristic(
-                                        heuristic.estimate(state, codedProblem.getGoal())+
-                                        my_heuristic.estimate(state,codedProblem.getGoal())
+                                        heuristic.estimate(state, codedProblem.getGoal())
                                 );
                                 state.setDepth(current.getDepth() + 1);
                                 open.add(state);

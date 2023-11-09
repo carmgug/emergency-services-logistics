@@ -69,7 +69,7 @@ public final class EnforcedHillClimbing extends AbstractStateSpaceSearch {
         final long begin = System.currentTimeMillis();
 
         final StateHeuristic heuristic = StateHeuristic.getInstance(this.getHeuristic(), codedProblem);
-        final EslHeuristic my_heuristic= EslHeuristic.getInstance(codedProblem);
+        final EslHeuristic my_heuristic= EslHeuristic.getInstance(codedProblem,this.getHeuristic());
 
         final LinkedList<Node> openList = new LinkedList<>();
         final long timeout = this.getTimeout() * 1000;

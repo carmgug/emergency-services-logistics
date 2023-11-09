@@ -7,9 +7,16 @@
         :conditional-effects
         :equality
         :existential-preconditions
-        :adl
-
+	    :adl
+	    :durative-actions
+	    :fluents
+	    :duration-inequalities
 	)
+
+	(:functions
+    		(content-weight ?content)
+    		(total-cost)
+   	)
 
 	(:types
 		slot  ; * A space in a dimensionable object
@@ -24,75 +31,74 @@
 
 
 	(:predicates
-
 		(at ?o - object ?l - location) ;  object ?o is at location ?l
 		(depot-at ?l - location) ; A depot is present at location ?l
 
 
-        ;; box
+
 		(full ?b - box) ; A box ?b that is full.
-		(already-taken ?b) ; box ?b it is not available
-		(has-inside ?b - box ?elem - content ) ; box ?b has content ?elem
-		(on-carrier ?b - box ?c - carrier) ;  box ?b is on carrier ?c
-
-
 		(empty ?s - slot ?c - carrier) ; A slot ?s of a carrier that is empty.
+		(on-carrier ?b - box ?c - carrier) ;  box ?b is on carrier ?c
+		(already-taken ?b) ; box ?b it is not available
 
-        ;; person
 		(has-content ?p - person ?elem - content ) ; person ?p has content ?elem
 		(satisfied-with-at-least-one ?p - person ?elem1 - content ?elem2 - content) ;  person ?p is satisfied with at least one of the objects ?elem1 or ?elem2
 		; allows to handle the 'or' in the goal
 
-
+		(has-inside ?b - box ?elem - content ) ; box ?b has content ?elem
 		(is-holding ?r -robot ?c - carrier) ; robot ?r is holding carrier ?c
 	)
 
 
 
-	(:action fill-box
+	(:durative-action fill-box
 		:parameters ( ?r - robot ?b - box ?elem - content ?l - location )
+		:duration (= ?duration 2)
 		:precondition (and
 		    (not (full ?b)) (depot-at ?l)
 		 	(at ?r ?l) (at ?elem ?l) (at ?b ?l)
 		)
-		:effect (and (full ?b) (has-inside ?b ?elem))
+		:effect (and (full ?b) (has-inside ?b ?elem) (increase (total_cost) (content-weight ?elem)))
 	)
 
-	(:action unfill-box
+	(:durative-action unfill-box
 	    :parameters (?r - robot ?b - box ?elem - content ?l - location)
+	    :duration (= ?duration 2)
 	    :precondition (and
 	        (full ?b) (has-inside ?b ?elem)
 	        (depot-at ?l) (at ?r ?l) (at ?b ?l)
 	    )
-	    :effect (and (not (full ?b)) (not (has-inside ?b ?elem)))
+	    :effect (and (not (full ?b)) (not (has-inside ?b ?elem)) (increase (total_cost) (content-weight ?elem)))
 	)
 
-	(:action give-content
+	(:durative-action give-content
 		:parameters (?r - robot ?p - person ?elem - content ?b - box   ?l - location
         	)
+		:duration (= ?duration 2)
 		:precondition (and (at ?p ?l) (at ?b ?l) (at ?r ?l)
 			(has-inside ?b ?elem) (not (has-content ?p ?elem))
         	)
 		:effect (and
 		    (not (has-inside ?b ?elem))
-            (not (full ?b)) (has-content ?p ?elem)
+            (not (full ?b)) (has-content ?p ?elem) (increase (total_cost) (content-weight ?elem))
         	)
 
 	)
 
-	(:action satisfied-with-at-least-one
+	(:durative-action satisfied-with-at-least-one
 		:parameters ( ?p - person ?elem1 - content ?elem2 - content)
+		:duration (= ?duration 0)
 		:precondition (and
 		    (not (satisfied-with-at-least-one ?p ?elem1 ?elem2))
 		    (or
 			    (has-content ?p ?elem1) (has-content ?p ?elem2)
         	))
 		:effect (satisfied-with-at-least-one ?p ?elem1 ?elem2)
-
 	)
 
-	(:action hold-carrier
+	(:durative-action hold-carrier
 		:parameters (?r - robot ?c - carrier ?l - location)
+		:duration (= ?duration 1)
 		:precondition (and (at ?r ?l) (at ?c ?l)
 		    (not
 		        (exists (?x - robot)
@@ -104,8 +110,9 @@
 
 	)
 
-	(:action release-carrier
+	(:durative-action release-carrier
 		:parameters (?r - robot ?c - carrier ?l - location)
+		:duration (= ?duration 1)
 		:precondition (and (is-holding ?r ?c) (depot-at ?l)
 		    (not
             	(exists (?b - box)
@@ -116,8 +123,9 @@
 		:effect (and (not (is-holding ?r ?c)) (at ?c ?l))
 	)
 
-	(:action load-carrier
+	(:durative-action load-carrier
 		:parameters (?r - robot ?b -box ?c - carrier ?s - slot ?l - location)
+		:duration (= ?duration 2)
 		:precondition (and
 		    (at ?b ?l) (at ?r ?l) (at ?c ?l)
 			(not (already-taken ?b))
@@ -131,8 +139,9 @@
 
 	)
 
-	(:action unload-carrier
+	(:durative-action unload-carrier
         		:parameters (?r - robot ?b - box ?c - carrier ?s - slot ?l - location)
+			:duration (= ?duration 2)
         		:precondition (and
         		    (is-holding ?r ?c)
         		    (at ?r ?l) (at ?c ?l) (depot-at ?l)
@@ -145,8 +154,9 @@
 
     )
 
-	(:action move
+	(:durative-action move
 		:parameters (?r - robot ?from ?to - location)
+		:duration (= ?duration 3)
 		:precondition (and (at ?r ?from) (not (at ?r ?to))
 				(not
 					(exists (?x - carrier)
@@ -156,9 +166,10 @@
 		:effect (and (not (at ?r ?from)) (at ?r ?to))
 	)
 
-	(:action move-carrier
+	(:durative-action move-carrier
 		:parameters (?r - robot ?from ?to -location ?c - carrier)
-		:precondition (and (at ?r ?from) (not(at ?r ?to)) (at ?c ?from) (is-holding ?r ?c))
+		:duration (= ?duration 3)
+		:condition (and (at ?r ?from) (not(at ?r ?to)) (at ?c ?from) (is-holding ?r ?c))
 		:effect (and (not (at ?r ?from)) (not (at ?c ?from))
             (at ?r ?to) (at ?c ?to)
             (forall (?b - box)
@@ -166,6 +177,32 @@
                 (and (not (at ?b ?from)) (at ?b ?to)
                 ))
             )
+		)
+	)
+
+
+
+	(:durative-action fill-box
+		:parameters ( ?r - robot ?b - box ?elem - content ?l - location )
+		:duration (= ?duration 1)
+		:condition (and
+			(at start
+				(and
+					(not (full ?b))
+				)
+			)
+			(over all
+				(and
+					(depot-at ?l) (at ?r ?l) (at ?elem ?l) (at ?b ?l)
+				)
+			)
+		)
+		:effect (and
+			(at end
+			    (and
+				    (full ?b) (has-inside ?b ?elem)
+				)
+			)
 		)
 	)
 

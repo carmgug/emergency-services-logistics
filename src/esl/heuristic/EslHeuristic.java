@@ -1,6 +1,7 @@
 package esl.heuristic;
 
 import fr.uga.pddl4j.heuristics.state.RelaxedGraphHeuristic;
+import fr.uga.pddl4j.heuristics.state.StateHeuristic;
 import fr.uga.pddl4j.parser.TypedSymbol;
 import fr.uga.pddl4j.problem.Fluent;
 import fr.uga.pddl4j.problem.Problem;
@@ -21,6 +22,8 @@ public final class EslHeuristic extends RelaxedGraphHeuristic {
     private static volatile EslHeuristic instance = null;
 
     private final Problem problem;
+    private final StateHeuristic heuristic;
+
 
     // idConditionMap: Map that translates the ID of an existing predicate within the problem
     // into a more understandable object. It allows associating an ID with a predicate,
@@ -32,19 +35,19 @@ public final class EslHeuristic extends RelaxedGraphHeuristic {
     private int n_boxes;
     private int n_carrier;
     private int n_robot;
+
     //Map containing pairs <String, Integer>, where String refers to the unique name of the carrier,
     // and Integer indicates the available space on that carrier.
     private Map<String,Integer> carrierInfo;
 
-    public EslHeuristic(Problem problem){
+    public EslHeuristic(Problem problem, StateHeuristic.Name heuristic){
         super(problem);
-
         this.problem=problem;
+        this.heuristic = StateHeuristic.getInstance(heuristic, problem);
         this.idConditionMap=new HashMap<>();
         typeToArguments=new HashMap<>();
         createIdConditionMap();
         createTypeToArguments();
-
 
         setUpVariableOfTheProblem();
 
@@ -102,11 +105,11 @@ public final class EslHeuristic extends RelaxedGraphHeuristic {
 
     }
 
-    public static EslHeuristic getInstance(Problem problem){
+    public static EslHeuristic getInstance(Problem problem, StateHeuristic.Name heuristic){
         if (instance == null) {
             synchronized(EslHeuristic.class) {
                 if (instance == null) {
-                    instance = new EslHeuristic(problem);
+                    instance = new EslHeuristic(problem, heuristic);
                 }
             }
         }
@@ -159,11 +162,6 @@ public final class EslHeuristic extends RelaxedGraphHeuristic {
                 return true;
             }
         }
-
-
-
-
-
         return false;
 
     }
@@ -346,7 +344,7 @@ public final class EslHeuristic extends RelaxedGraphHeuristic {
 
 
 
-        return estimated_value;
+        return estimated_value+heuristic.estimate(next,goal);
     }
 
     public double estimate(Node next, Condition goal) {

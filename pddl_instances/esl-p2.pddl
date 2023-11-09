@@ -22,7 +22,6 @@
 
   (:init
 
-    ; C'è un problema nelle condizioni iniziali
 
   	(depot-at depot)
 
