@@ -10,7 +10,7 @@
 )
 
 (:init
-    ;todo: put the initial state's facts and numeric values here
+
     (depot-at depot)
 
     (at b1 depot) (at b2 depot) (at b3 depot)(at b4 depot) (at b5 depot)

@@ -6,8 +6,6 @@
         :existential-preconditions 
         :numeric-fluents
         :durative-actions :adl
-        :typing
-        
     )
 
     (:types

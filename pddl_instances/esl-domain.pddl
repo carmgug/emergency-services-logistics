@@ -122,7 +122,7 @@
 		    (at ?b ?l) (at ?r ?l) (at ?c ?l)
 			(not (already-taken ?b))
 			(empty ?s ?c)
-
+			(is-holding ?r ?c)
 		)
 
 		:effect (and (on-carrier ?b ?c) (already-taken ?b)
